@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">网络图片</string>
+    <string name="edit_rule">编辑规则</string>
+    <string name="add_rule">添加规则(自定义)</string>
+    <string name="rule_sourceName">源名称:sourceName</string>
+    <string name="rule_sourceUrl">源地址:sourceUrl</string>
+    <string name="rule_sourceIndexImgLast">列表图片地址后缀:imageSrc</string>
+    <string name="rule_ImageListData">图片地址规则</string>
+    <string name="rule_imageListIsJson">图片列表用json解析(0或1)</string>
+    <string name="rule_imageListIsRe">图片列表用正则解析(0或1)</string>
+    <string name="rule_imageList">图片列表规则</string>
+    <string name="rule_src">首页显示的图片:ruleSrc</string>
+    <string name="rule_title">首页显示列表对应的标题:ruleTitle</string>
+    <string name="rule_href">首页列表对应地址:ruleHref</string>
+    <string name="rule_list">首页列表:ruleList</string>
+    <string name="rule_sourceImage">图片地址前缀，可以为空:sourceImage</string>
+    <string name="rule_sortUrl">分类:sortUrl</string>
+    <string name="desc_rule">rule:document.select</string>
+    <string name="save_rule">保存</string>
+    <string name="remove_rule">删除规则</string>
+    <string name="nextPage">下一页地址，可以为空</string>
+    <string name="reqMethod">请求方法</string>
+    <string name="rule_imageUrlReplace">图片地址替换规则</string>
+    <string name="rule_data">post请求data(没用)</string>
+    <string name="postUrl">post请求地址(没用)</string>
+    <string name="cookie">cookies用于登录</string>
+    <string name="net_add_rule">添加规则(网络)</string>
+    <string name="add_local_rule">添加规则(本地)</string>
+    <string name="open_browser">在浏览器中打开</string>
+</resources>

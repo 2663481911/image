@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/edit_rule"
+        android:icon="@drawable/edit"
+        app:showAsAction="ifRoom"
+        android:title="@string/edit_rule">
+    </item>
+
+    <item
+        android:id="@+id/remove_rule"
+        android:icon="@drawable/remove"
+        app:showAsAction="ifRoom"
+        android:title="@string/remove_rule"/>
+
+    <item
+        android:id="@+id/add_rule"
+        android:icon="@drawable/add"
+        android:title="@string/add_rule"/>
+    <item
+        android:id="@+id/add_local_rule"
+        android:icon="@drawable/add"
+        app:showAsAction="withText"
+        android:title="@string/add_local_rule"/>
+
+    <item
+        android:id="@+id/add_net_rule"
+        app:showAsAction="withText"
+        android:title="@string/net_add_rule"/>
+
+</menu>
