@@ -85,6 +85,7 @@ fun getImgUrlList(path: String):List<String>{
 /**
  * @param name 文件保存位置："/storage/emulated/0/myApp/img/$name/"
  * @param imgUrl :Bitmap
+ * @param context 上下文
  */
 fun saveImg(
     name: String,
@@ -114,7 +115,7 @@ fun saveImg(
     } catch (e: Exception) {
         e.printStackTrace()
     }
-    return "$path$fileName.jpg"
+    return "$path$fileName"
 }
 
 /**
