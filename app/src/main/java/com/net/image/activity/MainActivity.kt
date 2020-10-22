@@ -25,8 +25,7 @@ class MainActivity : AppCompatActivity(){
     private var ruleCurNum = 0   // 第几个规则
     private var pageNum:Int = 1  // 页码
     private lateinit var rule:Rule    // 当前选择规则
-
-
+    var ruleList:List<Rule>  = ArrayList<Rule>()   // 规则读取
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +35,7 @@ class MainActivity : AppCompatActivity(){
             it.setDisplayHomeAsUpEnabled(true)
             it.setHomeAsUpIndicator(R.drawable.menu)
         }
+        ruleList = readJson()
         initUI()
     }
 
@@ -84,10 +84,9 @@ class MainActivity : AppCompatActivity(){
         moveJson(this)
         val layoutManager = GridLayoutManager(this, 2)
         recyclerView.layoutManager = layoutManager
-        var readJson:List<Rule>  = readJson()    // 规则读取
 
-        initNavigationView(readJson)
-        rule = readJson[ruleCurNum]
+        initNavigationView(ruleList)
+        rule = ruleList[ruleCurNum]
         title = rule.sourceName
 
         val sortNameList = getSortNameList(rule)
@@ -105,7 +104,7 @@ class MainActivity : AppCompatActivity(){
 
         // 选择规则，换源
         navigation_view.setNavigationItemSelectedListener {
-            changeSource(readJson, it.itemId)
+            changeSource(ruleList, it.itemId)
             true
         }
 
@@ -193,11 +192,11 @@ class MainActivity : AppCompatActivity(){
         when(requestCode){
             1 -> when (resultCode) {
                 RESULT_OK ->{
-                    var readJson:List<Rule>  = readJson()    // 规则读取
-                    initNavigationView(readJson)
-                    if (readJson.size <= ruleCurNum)
+                    ruleList  = readJson()    // 规则读取
+                    initNavigationView(ruleList)
+                    if (ruleList.size <= ruleCurNum)
                         ruleCurNum = 0
-                    changeSource(readJson, ruleCurNum)
+                    changeSource(ruleList, ruleCurNum)
                 }
                 RESULT_CANCELED ->{
 
@@ -206,8 +205,6 @@ class MainActivity : AppCompatActivity(){
             }
         }
     }
-
-
 }
 
 

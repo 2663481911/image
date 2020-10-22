@@ -119,7 +119,7 @@ class RuleActivity : AppCompatActivity() {
         val readJson = readJson().toMutableList()
         if (ruleNum == -1)
             readJson.add(rule)
-        else(ruleNum >= 0)
+        else if(ruleNum >= 0)
             readJson[ruleNum] = rule
         saveJson(Gson().toJson(readJson).toString())
         Log.d("readJson", Gson().toJson(readJson).toString())
