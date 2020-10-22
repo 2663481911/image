@@ -66,11 +66,11 @@ class IndexImageDate(var href: String, var title: String, var src: String)
 
 
 // 读取规则
-fun readJson():List<Rule>{
+fun readJson(path: String="/storage/emulated/0/myApp/img/rule.json"):List<Rule>{
     val newStringBuilder = StringBuilder()
     var inputStream: InputStream? = null
     try {
-        inputStream = FileInputStream("/storage/emulated/0/myApp/img/rule.json")
+        inputStream = FileInputStream(path)
 //        inputStream = content.assets.open("rule.json")
         val isr = InputStreamReader(inputStream)
         val reader = BufferedReader(isr)

@@ -1,7 +1,11 @@
 package com.net.image.activity
 
+import android.content.Context
 import android.content.Intent
+import android.database.Cursor
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -18,6 +22,8 @@ import com.net.image.adapter.ImgIndex
 import com.net.image.adapter.ImgIndexAdapter
 import com.net.image.model.*
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.File
+import java.net.URISyntaxException
 import kotlin.concurrent.thread
 
 
@@ -39,7 +45,7 @@ class MainActivity : AppCompatActivity(){
         initUI()
     }
 
-    private fun updateRecyclerView(sortUrl:String){
+    private fun updateRecyclerView(sortUrl: String){
         // 更新页面数据
         thread {
             val indexDataList = getList(rule, sortUrl)
@@ -61,7 +67,7 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
-    private fun updateSpinner(sortNameList:ArrayList<String>){
+    private fun updateSpinner(sortNameList: ArrayList<String>){
         // 更新下拉选项
         val arrayAdapter =
             ArrayAdapter(this, R.layout.support_simple_spinner_dropdown_item, sortNameList)
@@ -69,7 +75,7 @@ class MainActivity : AppCompatActivity(){
         spinner.adapter = arrayAdapter
     }
 
-    private fun changeSource(readJson:List<Rule>, id:Int) {
+    private fun changeSource(readJson: List<Rule>, id: Int) {
         // 换源
         ruleCurNum = id
         rule = readJson[id]
@@ -110,8 +116,10 @@ class MainActivity : AppCompatActivity(){
 
         // 选择类别
         spinner.onItemSelectedListener = object : OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>,
-                                        view: View, positon: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View, positon: Int, id: Long
+            ) {
                 pageNum = 1
                 val sortUrl = changeSort(rule, positon, pageNum)
                 Log.d("sortUrl", sortUrl)
@@ -125,7 +133,7 @@ class MainActivity : AppCompatActivity(){
     }
 
 
-    private fun initNavigationView(readJson:List<Rule>){
+    private fun initNavigationView(readJson: List<Rule>){
         navigation_view.menu.clear()
         navigation_view.run {
             for (sum in readJson.indices){
@@ -137,7 +145,7 @@ class MainActivity : AppCompatActivity(){
     // 下一页
     private fun nextPage(sortNum: Int, curPageNum: Int) {
          when (curPageNum) {
-           pageNum -> pageNum += 1
+             pageNum -> pageNum += 1
              else -> pageNum = curPageNum
         }
         val sortUrl = changeSort(rule, sortNum, pageNum)
@@ -151,11 +159,11 @@ class MainActivity : AppCompatActivity(){
             android.R.id.home -> drawerLayout.openDrawer(GravityCompat.START)
             R.id.edit_rule -> {
                 val intent = Intent(this@MainActivity, RuleActivity::class.java)
-                Log.d("edit,rule", ruleCurNum.toString() )
+                Log.d("edit,rule", ruleCurNum.toString())
                 intent.putExtra("rule", rule)
                 intent.putExtra("ruleCurNum", ruleCurNum)
                 intent.putExtra("name", "edit")
-                startActivityForResult(intent, 1)
+                startActivityForResult(intent, 2)
             }
             R.id.add_rule -> {
                 val intent = Intent(this@MainActivity, RuleActivity::class.java)
@@ -171,10 +179,14 @@ class MainActivity : AppCompatActivity(){
                 startActivityForResult(intent, 1)
             }
 
-            R.id.add_local_rule ->{
-
+            R.id.add_local_rule -> {
+                val intent = Intent(Intent.ACTION_GET_CONTENT)
+                intent.type = "*/*" //设置类型，我这里是任意类型，任意后缀的可以这样写。
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                startActivityForResult(intent, 2)
             }
-            R.id.add_net_rule ->{
+
+            R.id.add_net_rule -> {
 
             }
         }
@@ -186,19 +198,34 @@ class MainActivity : AppCompatActivity(){
         return true
     }
 
+
     // 改变规则后返回事件处理
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when(requestCode){
+            2 -> {
+                val uri: Uri? = data?.data
+                val paths = uri?.path.toString().split(":")
+                if ("primary" in paths[0]) {
+                    val path =
+                        Environment.getExternalStorageDirectory().toString() + File.separator +
+                                paths[1];
+                    Log.d("uri", path)
+                }
+//                val readJson = readJson(path)
+//                for (rule in readJson) {
+//                    Log.d("name", rule.sourceName)
+//                }
+            }
             1 -> when (resultCode) {
-                RESULT_OK ->{
-                    ruleList  = readJson()    // 规则读取
+                RESULT_OK -> {
+                    ruleList = readJson()    // 规则读取
                     initNavigationView(ruleList)
                     if (ruleList.size <= ruleCurNum)
                         ruleCurNum = 0
                     changeSource(ruleList, ruleCurNum)
                 }
-                RESULT_CANCELED ->{
+                RESULT_CANCELED -> {
 
                 }
 

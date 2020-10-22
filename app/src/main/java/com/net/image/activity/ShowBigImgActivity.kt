@@ -1,8 +1,7 @@
 package com.net.image.activity
 
+import android.app.WallpaperManager
 import android.os.Bundle
-import android.os.Handler
-import android.os.Message
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -21,7 +20,7 @@ import kotlin.concurrent.thread
 
 
 class ShowBigImgActivity : AppCompatActivity() {
-    lateinit var pathNname:String
+    lateinit var pathName:String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,7 +48,6 @@ class ShowBigImgActivity : AppCompatActivity() {
             imageView.setPadding(20, 0, 20, 0)
             imageView.setBackgroundResource(R.drawable.indicator)
             view_indicator.addView(imageView)
-//
         }
 
         show_big_viewPager.adapter = BigViewPagerAdapter(aList!!, imgUrlList)
@@ -79,21 +77,25 @@ class ShowBigImgActivity : AppCompatActivity() {
         })
 
         bottom_linear.down.setOnClickListener {
-
             thread {
-                pathNname = name?.let { it1 -> saveImg(it1, imgUrlList[index_position],this) }.toString()
-                val msg = Message()
-                msg.what = 1
-                handler.sendMessage(msg) //发送message信息
+                pathName = name?.let { it1 -> saveImg(it1, imgUrlList[index_position], this) }.toString()
+                runOnUiThread {
+                    Toast.makeText(baseContext, pathName, Toast.LENGTH_SHORT).show()
+                }
+
             }
         }
-    }
-    private var handler: Handler = object : Handler() {
-        override fun handleMessage(msg: Message) {
-            when(msg.what) {
-                1 -> Toast.makeText(baseContext, pathNname, Toast.LENGTH_SHORT).show()
+
+        bottom_linear.setting_back.setOnClickListener {
+            thread {
+                val bitmap = Glide.with(this.baseContext)
+                    .asBitmap()
+                    .load(imgUrlList[index_position]).error(R.drawable.load)
+                    .submit().get()
+                WallpaperManager.getInstance(this).setBitmap(bitmap)
             }
         }
+
 
     }
 
