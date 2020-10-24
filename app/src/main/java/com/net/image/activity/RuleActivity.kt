@@ -58,7 +58,6 @@ class RuleActivity : AppCompatActivity() {
                 when (name) {
                     "edit" -> {
                         var ruleNum = this.intent.getIntExtra("ruleCurNum", 0)
-                        Log.d("name", "edit")
                         editRule(rule, ruleNum)
                     }
                     "add" -> {
@@ -119,8 +118,9 @@ class RuleActivity : AppCompatActivity() {
         val readJson = readJson().toMutableList()
         if (ruleNum == -1)
             readJson.add(rule)
-        else if(ruleNum >= 0)
-            readJson[ruleNum] = rule
+        else readJson[ruleNum] = rule
+        Log.d("name", "${rule.data} + ${rule.postUrl}")
+
         saveJson(Gson().toJson(readJson).toString())
         Log.d("readJson", Gson().toJson(readJson).toString())
 

@@ -5,7 +5,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import com.bumptech.glide.Glide
-import com.net.image.R
+import com.bumptech.glide.request.target.SimpleTarget
+import com.bumptech.glide.request.transition.Transition
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -19,24 +20,30 @@ import kotlin.collections.ArrayList
 fun getNextData(data:String, pageNum:Int=0, type:String=""):String{
     val jsonObject = JSONObject(data)
 //    val next = jsonObject.keys().next()
+    var jsonObject1 = JSONObject()
     for(next in jsonObject.keys()) {
-        val jsonObject1 = JSONObject(jsonObject.getString(next))
-        val ctime = jsonObject1.getString("ctime")
-        val param = jsonObject1.getJSONObject("param")
-        val time = Date().time
-        jsonObject1.put("ctime", time)
-        param.put("time_point", time / 1000)
-        param.put("start", (pageNum - 1) * 20)
-        if (type != "") {
-            param.put("type", type)
-            if (type == "day" || type == "week")
-                param.put("category", 0)
+        try {
+            jsonObject1 = JSONObject(jsonObject.getString(next))
+        }catch (e:Exception){
+            Log.d("getNextData", e.toString())
         }
-        val signCode = getSignCode(param.toString())
-        jsonObject1.put("sign_code", signCode)
-        jsonObject.put(next, jsonObject1.toString())
-        Log.d(ctime, jsonObject.toString())
-        break
+//        val jsonObject1 = JSONObject(jsonObject.getString(next))
+        if (jsonObject1.length() != 0 ) {
+            val ctime = jsonObject1.getString("ctime")
+            val param = jsonObject1.getJSONObject("param")
+            val time = Date().time
+            jsonObject1.put("ctime", time)
+            param.put("time_point", time / 1000)
+            param.put("start", (pageNum - 1) * 20)
+            if (type != "") {
+                param.put("works_category", 1)
+            }
+            val signCode = getSignCode(param.toString())
+            jsonObject1.put("sign_code", signCode)
+            jsonObject.put(next, jsonObject1.toString())
+            Log.d(ctime, jsonObject.toString())
+            return jsonObject.toString()
+        }
     }
     return jsonObject.toString()
 }
@@ -91,27 +98,36 @@ fun saveImg(
     name: String,
     imgUrl: String,
     context: Context,
-    path: String = "/storage/emulated/0/myApp/img/", ):String{
+    ):String{
+    val save_path = readInitJson(context)["save_path"]
     Log.d("imgUrl", imgUrl)
-    val path = "$path$name/"
+    val path = "$save_path$name/"
     val fileName: String = File(imgUrl).name.replace(Regex("\\?.*"), "")
     try {
-        val bitmap = Glide.with(context)
-            .asBitmap()
-            .load(imgUrl).error(R.drawable.load)
-            .submit().get()
+//        val bitmap = Glide.with(context)
+//            .asBitmap()
+//            .load(imgUrl).error(R.drawable.load)
+//            .submit().get()
 
-        if(!File(path).exists()){
-            File(path).mkdirs()
-            Log.d("download_img", "创建文件夹$path")
-        }
-        File(imgUrl).name
-        val file = File("$path$fileName")
-        Log.d("download_img", "下载$file")
-        val out = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
-        out.flush()
-        out.close()
+        Glide.with(context).asBitmap().load(imgUrl).into(
+            object : SimpleTarget<Bitmap?>() {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap?>?) {
+                    if(!File(path).exists()){
+                        File(path).mkdirs()
+                        Log.d("download_img", "创建文件夹$path")
+                    }
+                    File(imgUrl).name
+                    val file = File("$path$fileName")
+                    Log.d("download_img", "下载$file")
+                    val out = FileOutputStream(file)
+                    resource.compress(Bitmap.CompressFormat.JPEG, 100, out)
+                    out.flush()
+                    out.close()
+                }
+            }
+        )
+
+
     } catch (e: Exception) {
         e.printStackTrace()
     }
@@ -169,10 +185,13 @@ fun moveJson(content: Context){
     }
 }
 
+fun saveInitJson(){
+
+}
+
 fun saveJson(string: String){
     var outputStream:OutputStream? = null
     try {
-
         var bytes = string.toByteArray()
         val b = bytes.size //是字节的长度，不是字符串的长度
         outputStream = FileOutputStream("/storage/emulated/0/myApp/img/rule.json")
@@ -180,7 +199,6 @@ fun saveJson(string: String){
             write(bytes, 0, b)
             write(bytes)
         }
-
     } catch (e: IOException) {
         e.printStackTrace()
     }finally {

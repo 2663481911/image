@@ -1,6 +1,7 @@
 package com.net.image.activity
 
 import android.app.WallpaperManager
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +11,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.get
 import androidx.viewpager.widget.ViewPager.OnPageChangeListener
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.SimpleTarget
+import com.bumptech.glide.request.transition.Transition
 import com.net.image.R
 import com.net.image.adapter.BigViewPagerAdapter
 import com.net.image.model.saveImg
@@ -57,12 +60,12 @@ class ShowBigImgActivity : AppCompatActivity() {
         // 设置初始加载点击的图片
         view_indicator[index_position].setBackgroundResource(R.drawable.indicators)
         show_big_viewPager.addOnPageChangeListener(object : OnPageChangeListener {
+
             override fun onPageScrolled(
                 position: Int,
                 positionOffset: Float,
                 positionOffsetPixels: Int
-            ) {
-            }
+            ) {}
 
             override fun onPageSelected(position: Int) {
                 // 设置当前点
@@ -77,23 +80,27 @@ class ShowBigImgActivity : AppCompatActivity() {
         })
 
         bottom_linear.down.setOnClickListener {
-            thread {
-                pathName = name?.let { it1 -> saveImg(it1, imgUrlList[index_position], this) }.toString()
-                runOnUiThread {
-                    Toast.makeText(baseContext, pathName, Toast.LENGTH_SHORT).show()
-                }
 
-            }
+            pathName = name?.let { it1 -> saveImg(it1, imgUrlList[index_position], this) }.toString()
+            Toast.makeText(baseContext, pathName, Toast.LENGTH_SHORT).show()
+
         }
 
+
+
         bottom_linear.setting_back.setOnClickListener {
-            thread {
-                val bitmap = Glide.with(this.baseContext)
-                    .asBitmap()
-                    .load(imgUrlList[index_position]).error(R.drawable.load)
-                    .submit().get()
-                WallpaperManager.getInstance(this).setBitmap(bitmap)
-            }
+            // 设置壁纸
+            Glide.with(this.baseContext).asBitmap().load(imgUrlList[index_position]).into(
+                object : SimpleTarget<Bitmap?>() {
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap?>?) {
+                        WallpaperManager.getInstance(baseContext).setBitmap(resource)
+                        runOnUiThread {
+                            Toast.makeText(baseContext, "设置成功", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            )
+
         }
 
 

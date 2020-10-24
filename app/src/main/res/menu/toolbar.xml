@@ -29,4 +29,9 @@
         app:showAsAction="withText"
         android:title="@string/net_add_rule"/>
 
+    <item
+        android:id="@+id/save_pos"
+        app:showAsAction="withText"
+        android:title="@string/save_pos"/>
+
 </menu>

@@ -1,5 +1,7 @@
 package com.net.image.model
 
+import android.content.Context
+import android.content.res.AssetManager
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -64,9 +66,30 @@ class Rule(
  */
 class IndexImageDate(var href: String, var title: String, var src: String)
 
+fun readInitJson(content: Context):JSONObject{
+    val newStringBuilder = StringBuilder()
+    var inputStream: InputStream? = null
+    try {
+        inputStream = content.assets.open("init.json")
+        val isr = InputStreamReader(inputStream)
+        val reader = BufferedReader(isr)
+        var jsonLine: String?
+        while (reader.readLine().also { jsonLine = it } != null) {
+            newStringBuilder.append(jsonLine)
+        }
+        reader.close()
+        isr.close()
+        inputStream.close()
+    }catch (e: IOException) {
+        e.printStackTrace()
+    }
+    val result = newStringBuilder.toString()
+    return JSONObject(result)
+
+}
 
 // 读取规则
-fun readJson(path: String="/storage/emulated/0/myApp/img/rule.json"):List<Rule>{
+fun readJson(path: String = "/storage/emulated/0/myApp/img/rule.json"):List<Rule>{
     val newStringBuilder = StringBuilder()
     var inputStream: InputStream? = null
     try {
@@ -117,6 +140,8 @@ fun getList(rule: Rule, path: String):List<IndexImageDate>{
             val document: Document = Jsoup.connect(path)
                 .cookies(convertCookie(rule.cookie))
                 .get()
+
+            Log.d("document", document.text())
             val elements = document.select(rule.ruleList)
 
             for (img in elements) {
@@ -197,6 +222,7 @@ fun postMethod(rule: Rule, path: String):List<IndexImageDate>{
     try {
         val response:Response  = call.execute();
         val json = response.body?.string()
+        Log.d("json", json.toString())
         val document: Any = Configuration.defaultConfiguration().jsonProvider().parse(json)
         val srcList: List<String> = JsonPath.read(document, rule.ruleSrc)
         val hrefList: List<String> = JsonPath.read(document, rule.ruleHref)
@@ -216,25 +242,12 @@ fun postMethod(rule: Rule, path: String):List<IndexImageDate>{
     return imgUrlList
 }
 
-fun getPocoImgUrlLIst(rule: Rule, path: String):List<String>{
-    val imgList = ArrayList<String>()
-    val document = Jsoup.connect(path).userAgent("Mozilla/5.0").get()
-    val text = document.selectFirst(rule.ruleImageList).text()
-//    Log.d("recommand_list", text)
-    for(r in Regex(rule.imageListData).findAll(text)){
-        imgList.add(
-            rule.sourceImage + (r.groups[1]?.value ?: "")
-                .trim().replace(Regex(rule.imageUrlReplace), "")
-        )
-    }
-    return imgList
-}
 
 
 fun getImgUrlList(rule: Rule, path: String):List<String>{
     // 获取图片地址列表
 
-    Log.i("href", path+"1")
+    Log.i("href", path + "1")
     val imgList = ArrayList<String>()
     try {
         val nextPage = getNextPage(rule, path)

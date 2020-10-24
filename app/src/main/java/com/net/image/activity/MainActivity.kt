@@ -1,18 +1,17 @@
 package com.net.image.activity
 
-import android.content.Context
 import android.content.Intent
-import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.util.Log
+import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
@@ -21,9 +20,10 @@ import com.net.image.R
 import com.net.image.adapter.ImgIndex
 import com.net.image.adapter.ImgIndexAdapter
 import com.net.image.model.*
+import com.net.image.model.FileUtils.getFilePathByUri
 import kotlinx.android.synthetic.main.activity_main.*
-import java.io.File
-import java.net.URISyntaxException
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 import kotlin.concurrent.thread
 
 
@@ -41,6 +41,8 @@ class MainActivity : AppCompatActivity(){
             it.setDisplayHomeAsUpEnabled(true)
             it.setHomeAsUpIndicator(R.drawable.menu)
         }
+
+
         ruleList = readJson()
         initUI()
     }
@@ -80,6 +82,7 @@ class MainActivity : AppCompatActivity(){
         ruleCurNum = id
         rule = readJson[id]
         title = rule.sourceName
+
         val sortNameList = getSortNameList(rule)
         val sortUrl = changeSort(rule, 0, pageNum)
         updateSpinner(sortNameList)
@@ -103,13 +106,40 @@ class MainActivity : AppCompatActivity(){
 
         var sortNum = 0
         // 点击end按钮重新加载
-        button_end.setOnClickListener {
-            val curPageNum = page_num.text.toString()
-            nextPage(sortNum, curPageNum.toInt())
+        button_next.setOnClickListener {
+            val curPageNum = set_page_num.text.toString()
+            nextPage(sortNum)
         }
+
+        button_pre.setOnClickListener {
+            prePage(sortNum)
+        }
+
+        set_page_num.setOnEditorActionListener(object : TextView.OnEditorActionListener {
+            override fun onEditorAction(v: TextView?, actionId: Int, event: KeyEvent?): Boolean {
+                val curPageNum = set_page_num.text.toString()
+                try {
+                    val num = curPageNum.trim().toInt()
+                    setPageNum(sortNum, num)
+                }catch (e:NumberFormatException){
+                    Log.d("int", e.toString())
+                }
+
+                return false
+            }
+        })
+
 
         // 选择规则，换源
         navigation_view.setNavigationItemSelectedListener {
+//            rule = ruleList[it.itemId]
+//            val readJson = ruleList.toMutableList()
+//            readJson.removeAt(it.itemId)
+//            readJson.add(0, rule)
+//            saveJson(Gson().toJson(readJson).toString())
+//            ruleList = readJson.toList()
+//            initNavigationView(ruleList)
+
             changeSource(ruleList, it.itemId)
             true
         }
@@ -125,16 +155,23 @@ class MainActivity : AppCompatActivity(){
                 Log.d("sortUrl", sortUrl)
                 sortNum = positon
                 updateRecyclerView(sortUrl)
-                page_num.setText("1")
+                set_page_num.setText("1")
             }
-
+            
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+    }
+
+    fun isNumeric(str: String?): Boolean {
+        val pattern: Pattern = Pattern.compile("[0-9]*")
+        val isNum: Matcher = pattern.matcher(str)
+        return isNum.matches()
     }
 
 
     private fun initNavigationView(readJson: List<Rule>){
         navigation_view.menu.clear()
+        Log.d("initNavigationView", "initNavigationView")
         navigation_view.run {
             for (sum in readJson.indices){
                 navigation_view.menu.add(1, sum, sum, readJson[sum].sourceName)
@@ -142,14 +179,32 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
-    // 下一页
-    private fun nextPage(sortNum: Int, curPageNum: Int) {
-         when (curPageNum) {
-             pageNum -> pageNum += 1
-             else -> pageNum = curPageNum
-        }
+
+    // 上一页
+    private fun prePage(sortNum: Int) {
+        pageNum  -= 1
         val sortUrl = changeSort(rule, sortNum, pageNum)
-        page_num.setText(pageNum.toString())
+        set_page_num.setText(pageNum.toString())
+        updateRecyclerView(sortUrl)
+    }
+
+    private fun setPageNum(sortNum: Int, num:Int){
+        pageNum = num
+        val sortUrl = changeSort(rule, sortNum, pageNum)
+        set_page_num.setText(pageNum.toString())
+        updateRecyclerView(sortUrl)
+    }
+
+
+    // 下一页
+    private fun nextPage(sortNum: Int) {
+//         when (curPageNum) {
+//             pageNum -> pageNum += 1
+//             else -> pageNum = curPageNum
+//        }
+        pageNum += 1
+        val sortUrl = changeSort(rule, sortNum, pageNum)
+        set_page_num.setText(pageNum.toString())
         updateRecyclerView(sortUrl)
     }
 
@@ -189,6 +244,12 @@ class MainActivity : AppCompatActivity(){
             R.id.add_net_rule -> {
 
             }
+
+            R.id.save_pos -> {
+                // 保存文件夹
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                startActivityForResult(intent, 3)
+            }
         }
         return true
     }
@@ -203,19 +264,16 @@ class MainActivity : AppCompatActivity(){
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when(requestCode){
+            3 -> {
+                val uri: Uri? = data?.data
+                val filePathByUri = uri?.let { getFilePathByUri(baseContext, it) }
+
+            }
             2 -> {
                 val uri: Uri? = data?.data
-                val paths = uri?.path.toString().split(":")
-                if ("primary" in paths[0]) {
-                    val path =
-                        Environment.getExternalStorageDirectory().toString() + File.separator +
-                                paths[1];
-                    Log.d("uri", path)
-                }
-//                val readJson = readJson(path)
-//                for (rule in readJson) {
-//                    Log.d("name", rule.sourceName)
-//                }
+                val filePathByUri = uri?.let { getFilePathByUri(baseContext, it) }
+                Log.d("file", "${filePathByUri.toString()} + ${uri.toString()}")
+
             }
             1 -> when (resultCode) {
                 RESULT_OK -> {

@@ -3,8 +3,6 @@ package com.net.image.activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Message
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -28,49 +26,30 @@ class ImgListActivity : AppCompatActivity() {
     lateinit var rule:Rule
     lateinit var path:String
 
-    private var handler: Handler = object : Handler() {
-        override fun handleMessage(msg: Message) {
-            if (msg != null) {
-                if (msg.what == 1) {
-                    Toast.makeText(this@ImgListActivity, "下载完成", Toast.LENGTH_SHORT).show()
-                } else if(msg.what == 0) {
-                    initImgIndex()
-                    val layoutManager = GridLayoutManager(this@ImgListActivity, 1)
-                    img_list_recyclerView.layoutManager = layoutManager
-                    val adapter = ImgListAdapter(this@ImgListActivity, arrayList, imgList)
-                    img_list_recyclerView.adapter = adapter
-                }
-            }
-        }
-    }
-
     private fun initUI() {
         path = intent.getStringExtra("path").toString()
         name = intent.getStringExtra("title").toString()
         rule = intent.getSerializableExtra("rule") as Rule
         this.title = name
 
-
         thread {
             imgList = getImgUrlList(rule, path)
-            val mes = Message()
-            mes.what = 0
-            handler.sendMessage(Message())
-
+            runOnUiThread {
+                initImgIndex()
+                val layoutManager = GridLayoutManager(this@ImgListActivity, 1)
+                img_list_recyclerView.layoutManager = layoutManager
+                val adapter = ImgListAdapter(this@ImgListActivity, arrayList, imgList)
+                img_list_recyclerView.adapter = adapter
+            }
         }
 
         list_down_all.setOnClickListener {
             Toast.makeText(this, "下载中。。。。", Toast.LENGTH_SHORT).show()
-            thread {
-                for(imgUrl in imgList){
-                    val pathName = saveImg(name, imgUrl,this)
-                    Log.d("download_img", pathName)
-                }
-                val mes = Message()
-                mes.what = 1
-                handler.sendMessage(mes)
+            for(imgUrl in imgList){
+                val pathName = saveImg(name, imgUrl,this)
+                Log.d("download_img", pathName)
             }
-
+//            Toast.makeText(this@ImgListActivity, "下载完成", Toast.LENGTH_SHORT).show()
         }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
