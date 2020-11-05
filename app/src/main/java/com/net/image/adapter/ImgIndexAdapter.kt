@@ -10,15 +10,17 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.net.image.activity.ImgListActivity
 import com.net.image.R
+import com.net.image.activity.ImgListActivity
 import com.net.image.model.Rule
 
 
-class ImgIndexAdapter(val context: Context, private val imgList: List<ImgIndex>,val rule: Rule,
-                      val curRuleNum:Int) :
+class ImgIndexAdapter(
+    val context: Context, private val imgList: List<ImgIndex>, val rule: Rule,
+    val curRuleNum: Int
+) :
     RecyclerView.Adapter<ImgIndexAdapter.ViewHolder>(){
-//    private var rule: Rule? = rule
+
 
 
     inner class ViewHolder(view: View):RecyclerView.ViewHolder(view){
@@ -28,7 +30,10 @@ class ImgIndexAdapter(val context: Context, private val imgList: List<ImgIndex>,
 
     }
 
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+
+
         // 添加控件位置
         val view = LayoutInflater.from(context)
             .inflate(R.layout.img_index_item, parent, false)
@@ -38,7 +43,7 @@ class ImgIndexAdapter(val context: Context, private val imgList: List<ImgIndex>,
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         // 向控件中添加数据
         val imgIndex = imgList[position]
-        if(imgIndex.imgId != 0) holder.indexImg.setImageResource(imgIndex.imgId)
+        if (imgIndex.imgId != 0) holder.indexImg.setImageResource(imgIndex.imgId)
         else Glide.with(holder.itemView)
             .load(imgIndex.imgSrc)
             .centerCrop()

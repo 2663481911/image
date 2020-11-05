@@ -16,7 +16,7 @@
         <ImageView
             android:id="@+id/imageIndex_img"
             android:layout_width="match_parent"
-            android:layout_height="150dp"
+            android:layout_height="match_parent"
             android:src="@drawable/load"
             android:scaleType="center"
              />

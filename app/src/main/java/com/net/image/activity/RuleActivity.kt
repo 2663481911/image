@@ -58,7 +58,7 @@ class RuleActivity : AppCompatActivity() {
                 when (name) {
                     "edit" -> {
                         var ruleNum = this.intent.getIntExtra("ruleCurNum", 0)
-                        editRule(rule, ruleNum)
+                        editRule(rule, 0)
                     }
                     "add" -> {
                         editRule(rule, -1)
@@ -92,6 +92,8 @@ class RuleActivity : AppCompatActivity() {
         rule_sourceIndexImgLast.setText(rule.sourceIndexImgLast)
         rule_postUrl.setText(rule.postUrl)
         rule_cookie.setText(rule.cookie)
+        js.setText(rule.js)
+        jsMethod.setText(rule.jsMethod)
     }
 
     private fun editRule(rule:Rule, ruleNum:Int){
@@ -114,13 +116,12 @@ class RuleActivity : AppCompatActivity() {
         rule.ruleImageListIsJsonRe = rule_imageListIsJsonRe.text.toString()
         rule.postUrl = rule_postUrl.text.toString()
         rule.cookie = rule_cookie.text.toString()
+        rule.js = js.text.toString()
+        rule.jsMethod = jsMethod.text.toString()
 
         val readJson = readJson().toMutableList()
-        if (ruleNum == -1)
-            readJson.add(rule)
+        if (ruleNum == -1) readJson.add(rule)
         else readJson[ruleNum] = rule
-        Log.d("name", "${rule.data} + ${rule.postUrl}")
-
         saveJson(Gson().toJson(readJson).toString())
         Log.d("readJson", Gson().toJson(readJson).toString())
 

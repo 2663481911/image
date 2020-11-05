@@ -1,10 +1,7 @@
 package com.net.image.model
 
-import android.content.Context
-import android.content.res.AssetManager
+
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.jayway.jsonpath.Configuration
 import com.jayway.jsonpath.JsonPath
 import okhttp3.*
@@ -17,7 +14,7 @@ import java.io.*
 
 /**
  * @param ruleListIsJson   首页是否是json格式
- * @param data post请求表单数据json格式
+ * @param data post请求表单数据
  * @param sourceUrl 源地址，一般是首页
  * @param sourceName 网站名
  * @param sortUrl 分类
@@ -30,9 +27,11 @@ import java.io.*
  * @param ruleImageListIsJsonRe 是否运用正则
  * @param imageUrlReplace 图片地址替换规则
  * @param imageListData json格式的键
- * @param ruleImageSrc 图片列表地址规则
  * @param sourceImage  图片源地址
  * @param sourceIndexImgLast 首页缩略图后缀
+ * @param cookie 登录
+ * @param js 加载的js库
+ * @param jsMethod js方法
  */
 class Rule(
     var ruleListIsJson: String = "0",
@@ -50,11 +49,13 @@ class Rule(
     var imageUrlReplace: String = "",
     var imageListData: String = "",
     var sourceImage: String = "",
+    var sourceIndexImgLast: String = "",
     var nextPage: String = "",
     var reqMethod: String = "GET",
-    var sourceIndexImgLast: String = "",
     var postUrl: String = "",
-    var cookie: String = ""
+    var cookie: String = "",
+    var js: String="",
+    var jsMethod:String = ""
 ):Serializable
 
 
@@ -66,55 +67,8 @@ class Rule(
  */
 class IndexImageDate(var href: String, var title: String, var src: String)
 
-fun readInitJson(content: Context):JSONObject{
-    val newStringBuilder = StringBuilder()
-    var inputStream: InputStream? = null
-    try {
-        inputStream = content.assets.open("init.json")
-        val isr = InputStreamReader(inputStream)
-        val reader = BufferedReader(isr)
-        var jsonLine: String?
-        while (reader.readLine().also { jsonLine = it } != null) {
-            newStringBuilder.append(jsonLine)
-        }
-        reader.close()
-        isr.close()
-        inputStream.close()
-    }catch (e: IOException) {
-        e.printStackTrace()
-    }
-    val result = newStringBuilder.toString()
-    return JSONObject(result)
 
-}
 
-// 读取规则
-fun readJson(path: String = "/storage/emulated/0/myApp/img/rule.json"):List<Rule>{
-    val newStringBuilder = StringBuilder()
-    var inputStream: InputStream? = null
-    try {
-        inputStream = FileInputStream(path)
-//        inputStream = content.assets.open("rule.json")
-        val isr = InputStreamReader(inputStream)
-        val reader = BufferedReader(isr)
-        var jsonLine: String?
-        while (reader.readLine().also { jsonLine = it } != null) {
-            newStringBuilder.append(jsonLine)
-        }
-        reader.close()
-        isr.close()
-        inputStream.close()
-    } catch (e: IOException) {
-        e.printStackTrace()
-    }
-
-    val result = newStringBuilder.toString()
-    val jsonArray = JSONArray(result)
-    Log.d("json", result)
-    val typeOf = object : TypeToken<List<Rule>>() {}.type
-//    val gson = GsonBuilder().setLenient().create()
-    return Gson().fromJson(jsonArray.toString(), typeOf)
-}
 
 fun convertCookie(cookie: String): HashMap<String, String>? {
     val cookiesMap = HashMap<String, String>()
@@ -139,6 +93,7 @@ fun getList(rule: Rule, path: String):List<IndexImageDate>{
         try {
             val document: Document = Jsoup.connect(path)
                 .cookies(convertCookie(rule.cookie))
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36 Edg/86.0.622.58")
                 .get()
 
             Log.d("document", document.text())
@@ -177,33 +132,40 @@ fun getList(rule: Rule, path: String):List<IndexImageDate>{
 
 fun getNextPage(rule: Rule, path: String):Set<String>{
     val pathList = HashSet<String>()
-        if (rule.nextPage != null && rule.nextPage.isNotEmpty()) {
-            val document = Jsoup.connect(path).get()
-            val elements = document.select(rule.nextPage)
-            for (document in elements) {
+    if (rule.nextPage != null && rule.nextPage.isNotEmpty()) {
+        val document = Jsoup.connect(path).get()
+        val elements = document.select(rule.nextPage)
+        for (document in elements) {
+            val href = document.attr("abs:href")
+            if (href != "")
+                pathList.add(document.attr("abs:href"))
+        }
+
+        if (elements.size > 1) {
+            val element = elements[elements.size - 1]
+            val href = element.attr("abs:href")
+            val document = Jsoup.connect(href).get()
+            val documents = document.select(rule.nextPage)
+            for (document in documents) {
                 val href = document.attr("abs:href")
                 if (href != "")
                     pathList.add(document.attr("abs:href"))
             }
-
-            if (elements.size > 1) {
-                val element = elements[elements.size - 1]
-                val href = element.attr("abs:href")
-                val document = Jsoup.connect(href).get()
-                val documents = document.select(rule.nextPage)
-                for (document in documents) {
-                    val href = document.attr("abs:href")
-                    if (href != "")
-                        pathList.add(document.attr("abs:href"))
-                }
-            }
-        } else {
-            pathList.add(path)
         }
+    } else {
+        pathList.add(path)
+    }
     return pathList
 }
 
 fun postMethod(rule: Rule, path: String):List<IndexImageDate>{
+    var js = ""
+    if (rule.js.isNotEmpty()){
+        for(jsPath in rule.js.split("\n"))
+            js = getJs(jsPath).toString()
+    }
+    Log.d("data", rule.data)
+    rule.data = runJs(js + rule.jsMethod, rule.data) as String
     val imgUrlList = ArrayList<IndexImageDate>()
     val okHttpClient = OkHttpClient().newBuilder().build()
     val jsonObject = JSONObject(rule.data)
@@ -247,12 +209,12 @@ fun postMethod(rule: Rule, path: String):List<IndexImageDate>{
 fun getImgUrlList(rule: Rule, path: String):List<String>{
     // 获取图片地址列表
 
-    Log.i("href", path + "1")
+    Log.i("href", path)
     val imgList = ArrayList<String>()
     try {
         val nextPage = getNextPage(rule, path)
         for (page in nextPage) {
-            val document: Document = Jsoup.connect(page).userAgent("Mozilla/5.0").get();
+            val document: Document = Jsoup.connect(page).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36 Edg/86.0.622.58").get();
             val elements = document.select(rule.ruleImageList)
 
             when {
@@ -299,7 +261,8 @@ fun getImgUrlList(rule: Rule, path: String):List<String>{
     }catch (e: java.lang.Exception){
         Log.i("ed", e.toString())
     }
-        return imgList
+    Log.d("imgList", imgList.toString())
+    return imgList
 }
 
 

@@ -7,4 +7,9 @@
         app:showAsAction="ifRoom"
         android:title="@string/open_browser">
     </item>
+    <item
+        android:id="@+id/switch_layout"
+        app:showAsAction="always"
+        android:icon="@drawable/switch_layout"
+        android:title="切换布局"></item>
 </menu>

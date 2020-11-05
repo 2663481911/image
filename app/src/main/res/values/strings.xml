@@ -28,4 +28,6 @@
     <string name="add_local_rule">添加规则(本地)</string>
     <string name="open_browser">在浏览器中打开</string>
     <string name="save_pos">保存位置</string>
+    <string name="js">js库(使用js过程中使用的，导入)</string>
+    <string name="jsMethod">js方法（用于post请求，data数据改变）</string>
 </resources>

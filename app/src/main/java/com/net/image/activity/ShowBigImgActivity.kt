@@ -1,8 +1,10 @@
 package com.net.image.activity
 
-import android.app.WallpaperManager
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -16,6 +18,7 @@ import com.bumptech.glide.request.transition.Transition
 import com.net.image.R
 import com.net.image.adapter.BigViewPagerAdapter
 import com.net.image.model.saveImg
+import com.net.image.model.shareImg
 import kotlinx.android.synthetic.main.activity_show_big_img.*
 import kotlinx.android.synthetic.main.activity_show_big_img.view.*
 import kotlinx.android.synthetic.main.show_big_img_item.view.*
@@ -65,7 +68,8 @@ class ShowBigImgActivity : AppCompatActivity() {
                 position: Int,
                 positionOffset: Float,
                 positionOffsetPixels: Int
-            ) {}
+            ) {
+            }
 
             override fun onPageSelected(position: Int) {
                 // 设置当前点
@@ -80,10 +84,21 @@ class ShowBigImgActivity : AppCompatActivity() {
         })
 
         bottom_linear.down.setOnClickListener {
+            thread {
+                pathName = name?.let { it1 -> saveImg(it1, imgUrlList[index_position], this) }.toString()
+                runOnUiThread {
+                    Toast.makeText(baseContext, pathName, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
 
-            pathName = name?.let { it1 -> saveImg(it1, imgUrlList[index_position], this) }.toString()
-            Toast.makeText(baseContext, pathName, Toast.LENGTH_SHORT).show()
-
+        send_img.setOnClickListener {
+            val imgPath = name?.let { it1 -> saveImg(it1, imgUrlList[index_position], this) }
+            imgPath?.let { it1 ->
+                if (name != null) {
+                    shareImg(this, it1, name)
+                }
+            }
         }
 
 
@@ -92,14 +107,31 @@ class ShowBigImgActivity : AppCompatActivity() {
             // 设置壁纸
             Glide.with(this.baseContext).asBitmap().load(imgUrlList[index_position]).into(
                 object : SimpleTarget<Bitmap?>() {
-                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap?>?) {
-                        WallpaperManager.getInstance(baseContext).setBitmap(resource)
-                        runOnUiThread {
-                            Toast.makeText(baseContext, "设置成功", Toast.LENGTH_SHORT).show()
-                        }
+                    override fun onResourceReady(
+                        resource: Bitmap,
+                        transition: Transition<in Bitmap?>?
+                    ) {
+//                        WallpaperManager.getInstance(baseContext).setBitmap(resource)
+//                        runOnUiThread {
+//                            Toast.makeText(baseContext, "设置成功", Toast.LENGTH_SHORT).show()
+//                        }
+                        val intent = Intent(Intent.ACTION_ATTACH_DATA)
+                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        intent.putExtra("mimeType", "image/*")
+                        val uri: Uri = Uri.parse(
+                            MediaStore.Images.Media
+                                .insertImage(
+                                    baseContext.contentResolver,
+                                    resource, null, null
+                                )
+                        )
+                        intent.data = uri
+                        startActivityForResult(intent, 1)
                     }
-                }
-            )
+
+
+                })
+
 
         }
 

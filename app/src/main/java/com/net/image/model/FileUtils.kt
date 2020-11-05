@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.util.Log
 
 
 object FileUtils {
@@ -36,47 +37,53 @@ object FileUtils {
             return path
         }
         // 4.4及之后的 是以 content:// 开头的，比如 content://com.android.providers.media.documents/document/image%3A235700
-        if (ContentResolver.SCHEME_CONTENT == uri.scheme && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        if (ContentResolver.SCHEME_CONTENT == uri.scheme && Build.VERSION.SDK_INT >= Build
+            .VERSION_CODES.KITKAT) {
             if (DocumentsContract.isDocumentUri(context, uri)) {
-                if (isExternalStorageDocument(uri)) {
-                    // ExternalStorageProvider
-                    val docId = DocumentsContract.getDocumentId(uri)
-                    val split = docId.split(":").toTypedArray()
-                    val type = split[0]
-                    // 获取文件存储个数
-                    val externalFilesDirs =
-                        context.getExternalFilesDirs(Environment.MEDIA_MOUNTED)
-                    return if ("primary".equals(type, ignoreCase = true)) {
-                        externalFilesDirs[0].path.split("Android")[0] + split[1]
-                    }else{
-                        externalFilesDirs[1].path.split("Android")[0] + split[1]
+                when {
+                    isExternalStorageDocument(uri) -> {
+                        // ExternalStorageProvider
+                        val docId = DocumentsContract.getDocumentId(uri)
+                        val split = docId.split(":").toTypedArray()
+                        val type = split[0]
+                        // 获取文件存储个数
+                        val externalFilesDirs =
+                            context.getExternalFilesDirs(Environment.MEDIA_MOUNTED)
+                        return if ("primary".equals(type, ignoreCase = true)) {
+                            externalFilesDirs[0].path.split("Android")[0] + split[1]
+                        }else{
+                            Log.d("pathUrl0", externalFilesDirs[0].path.split("Android")[0] + split[1])
+                            externalFilesDirs[1].path.split("Android")[0] + split[1]
+                        }
                     }
-                } else if (isDownloadsDocument(uri)) {
-                    // DownloadsProvider
-                    val id = DocumentsContract.getDocumentId(uri)
-                    val contentUri: Uri = ContentUris.withAppendedId(
-                        Uri.parse("content://downloads/public_downloads"),
-                        java.lang.Long.valueOf(id)
-                    )
-                    path = getDataColumn(context, contentUri, null, null)
-                    return path
-                } else if (isMediaDocument(uri)) {
-                    // MediaProvider
-                    val docId = DocumentsContract.getDocumentId(uri)
-                    val split = docId.split(":").toTypedArray()
-                    val type = split[0]
-                    var contentUri: Uri? = null
-                    if ("image" == type) {
-                        contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                    } else if ("video" == type) {
-                        contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-                    } else if ("audio" == type) {
-                        contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                    isDownloadsDocument(uri) -> {
+                        // DownloadsProvider
+                        val id = DocumentsContract.getDocumentId(uri)
+                        val contentUri: Uri = ContentUris.withAppendedId(
+                            Uri.parse("content://downloads/public_downloads"),
+                            java.lang.Long.valueOf(id)
+                        )
+                        path = getDataColumn(context, contentUri, null, null)
+                        return path
                     }
-                    val selection = "_id=?"
-                    val selectionArgs = arrayOf(split[1])
-                    path = getDataColumn(context, contentUri, selection, selectionArgs)
-                    return path
+                    isMediaDocument(uri) -> {
+                        // MediaProvider
+                        val docId = DocumentsContract.getDocumentId(uri)
+                        val split = docId.split(":").toTypedArray()
+                        val type = split[0]
+                        var contentUri: Uri? = null
+                        if ("image" == type) {
+                            contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                        } else if ("video" == type) {
+                            contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                        } else if ("audio" == type) {
+                            contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                        }
+                        val selection = "_id=?"
+                        val selectionArgs = arrayOf(split[1])
+                        path = getDataColumn(context, contentUri, selection, selectionArgs)
+                        return path
+                    }
                 }
             }
         }
@@ -110,10 +117,10 @@ object FileUtils {
     }
 
     private fun isDownloadsDocument(uri: Uri): Boolean {
-        return "com.android.providers.downloads.documents" == uri.getAuthority()
+        return "com.android.providers.downloads.documents" == uri.authority
     }
 
     private fun isMediaDocument(uri: Uri): Boolean {
-        return "com.android.providers.media.documents" == uri.getAuthority()
+        return "com.android.providers.media.documents" == uri.authority
     }
 }

@@ -2,7 +2,9 @@ package com.net.image.activity
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.KeyEvent
 import android.view.Menu
@@ -13,17 +15,18 @@ import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import androidx.documentfile.provider.DocumentFile
 import androidx.recyclerview.widget.GridLayoutManager
+import com.google.gson.Gson
 import com.net.image.R
 import com.net.image.adapter.ImgIndex
 import com.net.image.adapter.ImgIndexAdapter
 import com.net.image.model.*
 import com.net.image.model.FileUtils.getFilePathByUri
 import kotlinx.android.synthetic.main.activity_main.*
-import java.util.regex.Matcher
-import java.util.regex.Pattern
 import kotlin.concurrent.thread
 
 
@@ -42,6 +45,10 @@ class MainActivity : AppCompatActivity(){
             it.setHomeAsUpIndicator(R.drawable.menu)
         }
 
+        val absolutePath = Environment.getExternalStorageDirectory().absolutePath
+        Log.d("abs", absolutePath)
+        moveJson(this, "rule", absolutePath)
+        moveJson(this, "init", absolutePath)
 
         ruleList = readJson()
         initUI()
@@ -77,10 +84,10 @@ class MainActivity : AppCompatActivity(){
         spinner.adapter = arrayAdapter
     }
 
-    private fun changeSource(readJson: List<Rule>, id: Int) {
+    private fun changeSource(id: Int) {
         // 换源
         ruleCurNum = id
-        rule = readJson[id]
+        rule = ruleList[id]
         title = rule.sourceName
 
         val sortNameList = getSortNameList(rule)
@@ -90,11 +97,13 @@ class MainActivity : AppCompatActivity(){
     }
 
     private fun initUI(){
-        moveJson(this)
+
+//        recyclerView.layoutManager =
+//            StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
         val layoutManager = GridLayoutManager(this, 2)
         recyclerView.layoutManager = layoutManager
 
-        initNavigationView(ruleList)
+        initNavigationView()
         rule = ruleList[ruleCurNum]
         title = rule.sourceName
 
@@ -105,9 +114,8 @@ class MainActivity : AppCompatActivity(){
         updateRecyclerView(sortUrl)
 
         var sortNum = 0
-        // 点击end按钮重新加载
+
         button_next.setOnClickListener {
-            val curPageNum = set_page_num.text.toString()
             nextPage(sortNum)
         }
 
@@ -115,13 +123,16 @@ class MainActivity : AppCompatActivity(){
             prePage(sortNum)
         }
 
+
+
+
         set_page_num.setOnEditorActionListener(object : TextView.OnEditorActionListener {
             override fun onEditorAction(v: TextView?, actionId: Int, event: KeyEvent?): Boolean {
                 val curPageNum = set_page_num.text.toString()
                 try {
                     val num = curPageNum.trim().toInt()
                     setPageNum(sortNum, num)
-                }catch (e:NumberFormatException){
+                } catch (e: NumberFormatException) {
                     Log.d("int", e.toString())
                 }
 
@@ -132,15 +143,17 @@ class MainActivity : AppCompatActivity(){
 
         // 选择规则，换源
         navigation_view.setNavigationItemSelectedListener {
-//            rule = ruleList[it.itemId]
-//            val readJson = ruleList.toMutableList()
-//            readJson.removeAt(it.itemId)
-//            readJson.add(0, rule)
-//            saveJson(Gson().toJson(readJson).toString())
-//            ruleList = readJson.toList()
-//            initNavigationView(ruleList)
 
-            changeSource(ruleList, it.itemId)
+            rule = ruleList[it.itemId]
+
+            // 置顶点击的，只是改变文件
+            val readJson = ruleList.toMutableList()
+            readJson.removeAt(it.itemId)
+            readJson.add(0, rule)
+            saveJson(Gson().toJson(readJson).toString())
+
+//            initNavigationView()
+            changeSource(it.itemId)
             true
         }
 
@@ -162,21 +175,18 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
-    fun isNumeric(str: String?): Boolean {
-        val pattern: Pattern = Pattern.compile("[0-9]*")
-        val isNum: Matcher = pattern.matcher(str)
-        return isNum.matches()
-    }
 
 
-    private fun initNavigationView(readJson: List<Rule>){
+    private fun initNavigationView(){
         navigation_view.menu.clear()
         Log.d("initNavigationView", "initNavigationView")
         navigation_view.run {
-            for (sum in readJson.indices){
-                navigation_view.menu.add(1, sum, sum, readJson[sum].sourceName)
+            for (sum in ruleList.indices){
+                Log.d("name", ruleList[sum].sourceName)
+                navigation_view.menu.add(1, sum, sum, ruleList[sum].sourceName)
             }
         }
+
     }
 
 
@@ -188,7 +198,7 @@ class MainActivity : AppCompatActivity(){
         updateRecyclerView(sortUrl)
     }
 
-    private fun setPageNum(sortNum: Int, num:Int){
+    private fun setPageNum(sortNum: Int, num: Int){
         pageNum = num
         val sortUrl = changeSort(rule, sortNum, pageNum)
         set_page_num.setText(pageNum.toString())
@@ -209,6 +219,7 @@ class MainActivity : AppCompatActivity(){
     }
 
     // 导航栏按钮功能
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when(item.itemId){
             android.R.id.home -> drawerLayout.openDrawer(GravityCompat.START)
@@ -218,7 +229,7 @@ class MainActivity : AppCompatActivity(){
                 intent.putExtra("rule", rule)
                 intent.putExtra("ruleCurNum", ruleCurNum)
                 intent.putExtra("name", "edit")
-                startActivityForResult(intent, 2)
+                startActivityForResult(intent, 1)
             }
             R.id.add_rule -> {
                 val intent = Intent(this@MainActivity, RuleActivity::class.java)
@@ -247,12 +258,21 @@ class MainActivity : AppCompatActivity(){
 
             R.id.save_pos -> {
                 // 保存文件夹
+//                intent = volume.createAccessIntent(null)
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
                 startActivityForResult(intent, 3)
+//                val sm = getSystemService(Context.STORAGE_SERVICE) as StorageManager
+//                val volume: StorageVolume = sm.primaryStorageVolume
+//                volume.createAccessIntent(null).also { intent ->
+//                    startActivityForResult(intent, 3)
+//                }
             }
         }
         return true
     }
+
+
+
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.toolbar, menu)
@@ -266,8 +286,14 @@ class MainActivity : AppCompatActivity(){
         when(requestCode){
             3 -> {
                 val uri: Uri? = data?.data
-                val filePathByUri = uri?.let { getFilePathByUri(baseContext, it) }
+                val fromTreeUri = uri?.let { DocumentFile.fromTreeUri(this, it)?.uri }
+                val filePath = fromTreeUri?.let { getFilePathByUri(baseContext, it) }.toString()
+                Log.d("pathUrl", filePath)
+                val initJson = readInitJson()
 
+                initJson.put("save_path", filePath)
+                Log.d("initJson", initJson.toString())
+                saveJson(initJson.toString(), "init")
             }
             2 -> {
                 val uri: Uri? = data?.data
@@ -277,11 +303,13 @@ class MainActivity : AppCompatActivity(){
             }
             1 -> when (resultCode) {
                 RESULT_OK -> {
+
                     ruleList = readJson()    // 规则读取
-                    initNavigationView(ruleList)
-                    if (ruleList.size <= ruleCurNum)
-                        ruleCurNum = 0
-                    changeSource(ruleList, ruleCurNum)
+                    initNavigationView()
+                    ruleCurNum = 0
+
+
+                    changeSource(ruleCurNum)
                 }
                 RESULT_CANCELED -> {
 

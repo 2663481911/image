@@ -30,13 +30,16 @@
         android:layout_alignParentBottom="true"
         android:layout_height="wrap_content">
 
+
+
         <ImageView
             android:id="@+id/down"
             android:layout_width="50dp"
             android:layout_height="30dp"
             android:src="@drawable/down"
-            android:layout_alignParentRight="true"
+            android:layout_toLeftOf="@id/send_img"
             />
+
         <ImageView
             android:id="@+id/setting_back"
             android:layout_width="80dp"
@@ -44,6 +47,15 @@
             android:foregroundGravity="center"
             android:layout_toLeftOf="@id/down"
             android:src="@drawable/wallpaper"
+            />
+
+        <ImageView
+            android:id="@+id/send_img"
+            android:layout_width="80dp"
+            android:layout_height="30dp"
+            android:foregroundGravity="center"
+            android:src="@drawable/send"
+            android:layout_alignParentRight="true"
             />
 
     </RelativeLayout>
