@@ -1,17 +1,16 @@
 package com.net.image.activity
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import com.net.image.R
-import com.net.image.model.Rule
-import com.net.image.model.readJson
-import com.net.image.model.saveJson
+import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
+import com.net.image.R
+import com.net.image.model.*
 import kotlinx.android.synthetic.main.activity_rule_edit.*
+
 
 class RuleActivity : AppCompatActivity() {
     private lateinit var name:String
@@ -31,7 +30,7 @@ class RuleActivity : AppCompatActivity() {
 
 
         when(name) {
-            "edit" ->  {
+            "edit" -> {
                 showRule(rule)
                 title = rule.sourceName
             }
@@ -48,12 +47,12 @@ class RuleActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when(item.itemId){
-            android.R.id.home ->{
+            android.R.id.home -> {
                 setResult(RESULT_CANCELED)
                 finish()
             }
 
-            R.id.save_rule ->{
+            R.id.save_rule -> {
                 val intent = Intent()
                 when (name) {
                     "edit" -> {
@@ -67,12 +66,26 @@ class RuleActivity : AppCompatActivity() {
                 setResult(RESULT_OK, intent)
                 finish()
             }
+
+            R.id.paste_rule -> {
+                val textFromClip = getTextFromClip(this)
+                val rule = Gson().fromJson(textFromClip, Rule::class.java)
+                showRule(rule)
+            }
+
+            R.id.copy_rule ->{
+                putTextIntoClip(this, rule.toString())
+            }
         }
 
         return true
     }
 
-    private fun showRule(rule:Rule){
+
+
+
+
+    private fun showRule(rule: Rule){
         rule_data.setText(rule.data)
         rule_href.setText(rule.ruleHref)
         rule_imageList.setText(rule.ruleImageList)
@@ -96,7 +109,7 @@ class RuleActivity : AppCompatActivity() {
         jsMethod.setText(rule.jsMethod)
     }
 
-    private fun editRule(rule:Rule, ruleNum:Int){
+    private fun editRule(rule: Rule, ruleNum: Int){
         rule.imageUrlReplace = rule_imageUrlReplace.text.toString()
         rule.data = rule_data.text.toString()
         rule.ruleHref = rule_href.text.toString()
@@ -119,10 +132,10 @@ class RuleActivity : AppCompatActivity() {
         rule.js = js.text.toString()
         rule.jsMethod = jsMethod.text.toString()
 
-        val readJson = readJson().toMutableList()
+        val readJson = readJson(this).toMutableList()
         if (ruleNum == -1) readJson.add(rule)
         else readJson[ruleNum] = rule
-        saveJson(Gson().toJson(readJson).toString())
+        saveJson(this, Gson().toJson(readJson).toString())
         Log.d("readJson", Gson().toJson(readJson).toString())
 
     }

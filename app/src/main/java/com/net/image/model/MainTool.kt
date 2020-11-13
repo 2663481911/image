@@ -1,5 +1,6 @@
 package com.net.image.model
 
+import android.util.Log
 import kotlin.concurrent.thread
 
 
@@ -10,7 +11,6 @@ import kotlin.concurrent.thread
  */
 fun changeSort(rule: Rule, num:Int, pageNum:Int): String {
     when(rule.js.length){
-
         0 ->{
             val sortList = rule.sortUrl.split("\n")
             if (sortList.size > num){
@@ -21,16 +21,11 @@ fun changeSort(rule: Rule, num:Int, pageNum:Int): String {
             }
         }
         else ->{
-//            val type = rule.sortUrl.split("\n")[num].split("::")[1]
+            val urlData = rule.sortUrl.split("\n")[num].split("::", limit=2)[1]
 //            rule.data = getNextData(rule.data, pageNum, type)
-//            var js = ""
-//            if (rule.js.isNotEmpty()){
-//                thread {
-//                    js = getJs(rule.js).toString()
-//                    rule.data = runJs( js + rule.jsMethod, rule.data) as String
-//                }
-//            }
-            return rule.postUrl
+            Log.d("urlData", urlData)
+            rule.data = urlData.split(",", limit = 2)[1].trim()
+            return urlData.split(",", limit = 2)[0]
         }
     }
     return ""

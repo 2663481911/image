@@ -7,11 +7,12 @@
     android:layout_height="match_parent"
     tools:context=".activity.MainActivity">
 
-    <!--首页-->
+    <!--         首页        -->
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+    <!--        标题栏         -->
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -25,13 +26,16 @@
                 android:layout_height="?attr/actionBarSize"/>
         </com.google.android.material.appbar.AppBarLayout>
 
+
         <LinearLayout
             app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
             android:orientation="vertical"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content">
+
+            <!--        导航栏         -->
             <LinearLayout
-                android:layout_marginLeft="10dp"
+                android:layout_marginStart="10dp"
                 android:layout_width="match_parent"
                 android:layout_height="40dp">
 
@@ -44,7 +48,7 @@
                     android:id="@+id/button_pre"
                     android:layout_width="30dp"
                     android:background="@drawable/pre"
-                    android:layout_marginLeft="20dp"
+                    android:layout_marginStart="20dp"
                     android:layout_height="20dp"/>
 
                 <EditText
@@ -65,24 +69,35 @@
                     android:layout_height="20dp"/>
 
             </LinearLayout>
+
+<!--            信息显示          -->
             <RelativeLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content">
                 <ProgressBar
-                    android:id="@+id/index_progressBar"
+                    android:id="@+id/top_bar"
                     android:layout_width="wrap_content"
-                    android:layout_centerInParent="true"
+                    android:layout_centerHorizontal="true"
                     android:layout_height="wrap_content"/>
+
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"/>
+                <ProgressBar
+                    android:id="@+id/index_progressBar"
+                    android:layout_width="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:layout_alignParentBottom="true"
+                    android:layout_height="wrap_content"/>
 
             </RelativeLayout>
+
         </LinearLayout>
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
+<!--    侧边栏    -->
     <com.google.android.material.navigation.NavigationView
         android:layout_gravity="start"
         android:layout_width="match_parent"

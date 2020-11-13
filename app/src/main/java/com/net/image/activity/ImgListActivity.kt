@@ -34,15 +34,17 @@ class ImgListActivity : AppCompatActivity() {
             it.setDisplayHomeAsUpEnabled(true)
             it.setHomeAsUpIndicator(R.drawable.back)
         }
-        val readInitJson = readInitJson()
+        val readInitJson = readInitJson(this)
         layoutNum = readInitJson["list_layout"].toString().toInt()
+        val readJson = readJson(this)
+        rule = readJson[0]
         initUI()
     }
 
     private fun initUI() {
         path = intent.getStringExtra("path").toString()
         name = intent.getStringExtra("title").toString()
-        rule = intent.getSerializableExtra("rule") as Rule
+//        rule = intent.getSerializableExtra("rule") as Rule
         this.title = name
 
 
@@ -53,7 +55,6 @@ class ImgListActivity : AppCompatActivity() {
             runOnUiThread {
                 if (arrayList.isEmpty())
                     initImgIndex()
-
                 when (layoutNum) {
                     //  流式布局
                     1 -> img_list_recyclerView.layoutManager = StaggeredGridLayoutManager(
@@ -113,9 +114,9 @@ class ImgListActivity : AppCompatActivity() {
                 if (layoutNum == 3)
                     layoutNum = 1
                 else layoutNum += 1
-                val readInitJson = readInitJson()
+                val readInitJson = readInitJson(this)
                 readInitJson.put("list_layout", layoutNum)
-                saveJson(readInitJson.toString(), "init")
+                saveJson(this, readInitJson.toString(), "init")
                 initUI()
             }
         }

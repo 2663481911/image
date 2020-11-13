@@ -30,4 +30,9 @@
     <string name="save_pos">保存位置</string>
     <string name="js">js库(使用js过程中使用的，导入)</string>
     <string name="jsMethod">js方法（用于post请求，data数据改变）</string>
+    <string name="down">下载</string>
+    <string name="shave">分享</string>
+    <string name="make">使用</string>
+    <string name="copy_rule">复制规则</string>
+    <string name="paste_rule">黏贴</string>
 </resources>

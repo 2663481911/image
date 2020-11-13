@@ -87,7 +87,7 @@ fun convertCookie(cookie: String): HashMap<String, String>? {
  * @param rule
  * @return List<IndexImageDate> 图片列表页地址列表：
  */
-fun getList(rule: Rule, path: String):List<IndexImageDate>{
+fun getList(rule: Rule, path: String, pageNum:Int=0):List<IndexImageDate>{
     if (rule.ruleListIsJson != "1") {
         val imgUrlList = ArrayList<IndexImageDate>()
         try {
@@ -125,7 +125,7 @@ fun getList(rule: Rule, path: String):List<IndexImageDate>{
 //        Log.d("imgUrlList", imgUrlList.toString())
         return imgUrlList
     }else{
-        return postMethod(rule, path)
+        return postMethod(rule, path, pageNum)
     }
 }
 
@@ -158,14 +158,14 @@ fun getNextPage(rule: Rule, path: String):Set<String>{
     return pathList
 }
 
-fun postMethod(rule: Rule, path: String):List<IndexImageDate>{
+fun postMethod(rule: Rule, path: String, page: Int):List<IndexImageDate>{
     var js = ""
     if (rule.js.isNotEmpty()){
         for(jsPath in rule.js.split("\n"))
-            js = getJs(jsPath).toString()
+            js = getHtml(jsPath).toString()
     }
     Log.d("data", rule.data)
-    rule.data = runJs(js + rule.jsMethod, rule.data) as String
+    rule.data = runJs(js + rule.jsMethod, rule.data, page) as String
     val imgUrlList = ArrayList<IndexImageDate>()
     val okHttpClient = OkHttpClient().newBuilder().build()
     val jsonObject = JSONObject(rule.data)

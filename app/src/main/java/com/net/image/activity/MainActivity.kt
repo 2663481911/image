@@ -1,25 +1,27 @@
 package com.net.image.activity
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
-import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.view.GravityCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.OnScrollListener
 import com.google.gson.Gson
 import com.net.image.R
 import com.net.image.adapter.ImgIndex
@@ -34,7 +36,11 @@ class MainActivity : AppCompatActivity(){
     private var ruleCurNum = 0   // 第几个规则
     private var pageNum:Int = 1  // 页码
     private lateinit var rule:Rule    // 当前选择规则
-    var ruleList:List<Rule>  = ArrayList<Rule>()   // 规则读取
+    var ruleList:List<Rule>  = ArrayList()   // 规则读取
+    private var sortNum = 0   // 第几个分类
+    private var isBottomRefreshing:Boolean = false    // 底部刷新
+    private lateinit var adapter:ImgIndexAdapter
+    private val imgList = ArrayList<ImgIndex>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,32 +51,45 @@ class MainActivity : AppCompatActivity(){
             it.setHomeAsUpIndicator(R.drawable.menu)
         }
 
-        val absolutePath = Environment.getExternalStorageDirectory().absolutePath
-        Log.d("abs", absolutePath)
-        moveJson(this, "rule", absolutePath)
-        moveJson(this, "init", absolutePath)
+        adapter = ImgIndexAdapter(this, ruleCurNum)
+        recyclerView.adapter = adapter
 
-        ruleList = readJson()
+
+        moveJson(this, "rule")
+        moveJson(this, "init")
+
+        ruleList = readJson(this)
         initUI()
     }
 
-    private fun updateRecyclerView(sortUrl: String){
+    private fun updateRecyclerView(sortUrl: String, delData:Boolean=true){
         // 更新页面数据
+        if (delData) {
+            imgList.clear()
+            recyclerView.removeAllViews()
+            top_bar.visibility = View.VISIBLE
+        }
         thread {
-            val indexDataList = getList(rule, sortUrl)
+            Log.d("rule", rule.toString())
+            val indexDataList = getList(rule, sortUrl, pageNum)
+
             if (indexDataList.isNotEmpty()){
-                val imgList = ArrayList<ImgIndex>()
+                isBottomRefreshing = false
                 for (img_url in indexDataList) {
                     imgList.add(ImgIndex(img_url.title, img_url.href, img_url.src))
                 }
                 runOnUiThread {
-                    val adapter = ImgIndexAdapter(this, imgList, rule, ruleCurNum)
-                    recyclerView.adapter = adapter
+//                    val adapter = ImgIndexAdapter(this, rule, ruleCurNum)
+//                    recyclerView.adapter = adapter
+//
+                    adapter.setData(imgList)
+                    adapter.notifyDataSetChanged()
+                    top_bar.visibility = View.GONE
                     index_progressBar.visibility = View.GONE
                 }
             }else{
                 runOnUiThread {
-                    Toast.makeText(this, "没有下一页", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "没有数据", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -78,10 +97,10 @@ class MainActivity : AppCompatActivity(){
 
     private fun updateSpinner(sortNameList: ArrayList<String>){
         // 更新下拉选项
-        val arrayAdapter =
-            ArrayAdapter(this, R.layout.support_simple_spinner_dropdown_item, sortNameList)
+        val arrayAdapter = ArrayAdapter(this, R.layout.support_simple_spinner_dropdown_item, sortNameList)
         arrayAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item)
         spinner.adapter = arrayAdapter
+        top_bar.visibility = View.VISIBLE
     }
 
     private fun changeSource(id: Int) {
@@ -103,6 +122,27 @@ class MainActivity : AppCompatActivity(){
         val layoutManager = GridLayoutManager(this, 2)
         recyclerView.layoutManager = layoutManager
 
+        recyclerView.addOnScrollListener(object : OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    val lastVisiblePosition: Int = layoutManager.findLastVisibleItemPosition()
+                    if (lastVisiblePosition >= layoutManager.itemCount - 1) {
+                        Log.d("layoutManager", layoutManager.itemCount.toString())
+//                        System.out.println("====自动加载");
+                        if (layoutManager.itemCount != 0 && !isBottomRefreshing) {
+
+                            nextPage(false)
+                            Log.d("isBottomRefreshing", isBottomRefreshing.toString())
+
+                            index_progressBar.visibility = View.VISIBLE
+                            isBottomRefreshing = true
+                        }
+                    }
+                }
+            }
+        })
+
         initNavigationView()
         rule = ruleList[ruleCurNum]
         title = rule.sourceName
@@ -110,35 +150,28 @@ class MainActivity : AppCompatActivity(){
         val sortNameList = getSortNameList(rule)
         updateSpinner(sortNameList)
 
-        val sortUrl = changeSort(rule, 0, pageNum)
-        updateRecyclerView(sortUrl)
-
-        var sortNum = 0
 
         button_next.setOnClickListener {
-            nextPage(sortNum)
+            nextPage()
         }
 
         button_pre.setOnClickListener {
-            prePage(sortNum)
+            prePage()
         }
 
 
-
-
-        set_page_num.setOnEditorActionListener(object : TextView.OnEditorActionListener {
-            override fun onEditorAction(v: TextView?, actionId: Int, event: KeyEvent?): Boolean {
-                val curPageNum = set_page_num.text.toString()
-                try {
-                    val num = curPageNum.trim().toInt()
-                    setPageNum(sortNum, num)
-                } catch (e: NumberFormatException) {
-                    Log.d("int", e.toString())
-                }
-
-                return false
+        set_page_num.setOnEditorActionListener {
+                _, _, _ ->
+            val curPageNum = set_page_num.text.toString()
+            try {
+                val num = curPageNum.trim().toInt()
+                setPageNum(num)
+            } catch (e: NumberFormatException) {
+                Log.d("int", e.toString())
             }
-        })
+
+            false
+        }
 
 
         // 选择规则，换源
@@ -150,7 +183,7 @@ class MainActivity : AppCompatActivity(){
             val readJson = ruleList.toMutableList()
             readJson.removeAt(it.itemId)
             readJson.add(0, rule)
-            saveJson(Gson().toJson(readJson).toString())
+            saveJson(this, Gson().toJson(readJson).toString())
 
 //            initNavigationView()
             changeSource(it.itemId)
@@ -191,14 +224,16 @@ class MainActivity : AppCompatActivity(){
 
 
     // 上一页
-    private fun prePage(sortNum: Int) {
-        pageNum  -= 1
-        val sortUrl = changeSort(rule, sortNum, pageNum)
-        set_page_num.setText(pageNum.toString())
-        updateRecyclerView(sortUrl)
+    private fun prePage() {
+        if (pageNum > 1) {
+            pageNum -= 1
+            val sortUrl = changeSort(rule, sortNum, pageNum)
+            set_page_num.setText(pageNum.toString())
+            updateRecyclerView(sortUrl)
+        }
     }
 
-    private fun setPageNum(sortNum: Int, num: Int){
+    private fun setPageNum(num: Int){
         pageNum = num
         val sortUrl = changeSort(rule, sortNum, pageNum)
         set_page_num.setText(pageNum.toString())
@@ -207,7 +242,7 @@ class MainActivity : AppCompatActivity(){
 
 
     // 下一页
-    private fun nextPage(sortNum: Int) {
+    private fun nextPage(delData: Boolean=true) {
 //         when (curPageNum) {
 //             pageNum -> pageNum += 1
 //             else -> pageNum = curPageNum
@@ -215,7 +250,7 @@ class MainActivity : AppCompatActivity(){
         pageNum += 1
         val sortUrl = changeSort(rule, sortNum, pageNum)
         set_page_num.setText(pageNum.toString())
-        updateRecyclerView(sortUrl)
+        updateRecyclerView(sortUrl, delData)
     }
 
     // 导航栏按钮功能
@@ -267,6 +302,11 @@ class MainActivity : AppCompatActivity(){
 //                    startActivityForResult(intent, 3)
 //                }
             }
+
+            R.id.copy_rule ->{
+                putTextIntoClip(this, Gson().toJson(rule).toString())
+                Toast.makeText(this, "复制成功", Toast.LENGTH_SHORT).show()
+            }
         }
         return true
     }
@@ -289,11 +329,11 @@ class MainActivity : AppCompatActivity(){
                 val fromTreeUri = uri?.let { DocumentFile.fromTreeUri(this, it)?.uri }
                 val filePath = fromTreeUri?.let { getFilePathByUri(baseContext, it) }.toString()
                 Log.d("pathUrl", filePath)
-                val initJson = readInitJson()
+                val initJson = readInitJson(this)
 
                 initJson.put("save_path", filePath)
                 Log.d("initJson", initJson.toString())
-                saveJson(initJson.toString(), "init")
+                saveJson(this, initJson.toString(), "init")
             }
             2 -> {
                 val uri: Uri? = data?.data
@@ -303,12 +343,9 @@ class MainActivity : AppCompatActivity(){
             }
             1 -> when (resultCode) {
                 RESULT_OK -> {
-
-                    ruleList = readJson()    // 规则读取
+                    ruleList = readJson(this)    // 规则读取
                     initNavigationView()
                     ruleCurNum = 0
-
-
                     changeSource(ruleCurNum)
                 }
                 RESULT_CANCELED -> {

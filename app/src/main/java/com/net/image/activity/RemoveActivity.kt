@@ -20,7 +20,7 @@ class RemoveActivity : AppCompatActivity() {
             it.setHomeAsUpIndicator(R.drawable.back)
         }
 
-        val readJson = readJson()
+        val readJson = readJson(this)
         val nameList = ArrayList<String>()
         val layoutManager = LinearLayoutManager(this)
         remove_recyclerview.layoutManager = layoutManager

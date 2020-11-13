@@ -1,16 +1,18 @@
-@file:Suppress("DEPRECATION")
-
 package com.net.image.model
 
+import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.SimpleTarget
-import com.bumptech.glide.request.transition.Transition
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.json.JSONArray
@@ -20,57 +22,8 @@ import java.security.MessageDigest
 import java.util.*
 
 
-fun getNextData(data: String, pageNum: Int = 0, type: String = ""):String{
-    val jsonObject = JSONObject(data)
-//    val next = jsonObject.keys().next()
-    var jsonObject1 = JSONObject()
-    for(next in jsonObject.keys()) {
-        try {
-            jsonObject1 = JSONObject(jsonObject.getString(next))
-        }catch (e: Exception){
-            Log.d("getNextData", e.toString())
-        }
-//        val jsonObject1 = JSONObject(jsonObject.getString(next))
-        if (jsonObject1.length() != 0 ) {
-            val ctime = jsonObject1.getString("ctime")
-            val param = jsonObject1.getJSONObject("param")
-            val time = Date().time
-            jsonObject1.put("ctime", time)
-            param.put("time_point", time / 1000)
-            param.put("start", (pageNum - 1) * 20)
-            if (type != "") {
-                param.put("works_category", type)
-            }
-            val signCode = getSignCode(param.toString())
-            jsonObject1.put("sign_code", signCode)
-            jsonObject.put(next, jsonObject1.toString())
-            Log.d(ctime, jsonObject.toString())
-            return jsonObject.toString()
-        }
-    }
-    return jsonObject.toString()
-}
 
 
-fun getSignCode(param: String):String{
-    val text = "poco_${param}_app"
-    val instance: MessageDigest = MessageDigest.getInstance("MD5")
-    //对字符串加密，返回字节数组
-    val digest:ByteArray = instance.digest(text.toByteArray())
-    var sb : StringBuffer = StringBuffer()
-    for (b in digest) {
-        //获取低八位有效值
-        var i :Int = b.toInt() and 0xff
-        //将整数转化为16进制
-        var hexString = Integer.toHexString(i)
-        if (hexString.length < 2) {
-            //如果是一位的话，补0
-            hexString = "0" + hexString
-        }
-        sb.append(hexString)
-    }
-    return sb.substring(5, 24)
-}
 
 
 /**
@@ -79,9 +32,10 @@ fun getSignCode(param: String):String{
  * @param context 上下文
  */
 fun saveImg(name: String, imgUrl: String, context: Context):String{
-    val save_path = readInitJson()["save_path"]
+//    val save_path = readInitJson(context)["save_path"]
+    val absolutePath  = Environment.getExternalStorageDirectory().absolutePath
     Log.d("imgUrl", imgUrl)
-    val path = "$save_path/$name/"
+    val path = "$absolutePath/myApp/img/$name/"
     val fileName: String = File(imgUrl).name.replace(Regex("\\?.*"), "")
     try {
 
@@ -98,20 +52,6 @@ fun saveImg(name: String, imgUrl: String, context: Context):String{
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
         out.flush()
         out.close()
-//        Log.d("download_img", "下载$file")
-//        Glide.with(context).asBitmap().load(imgUrl).into(
-//            object : SimpleTarget<Bitmap?>() {
-//                override fun onResourceReady(
-//                    resource: Bitmap,
-//                    transition: Transition<in Bitmap?>?
-//                ) {
-//                    val out = FileOutputStream(file)
-//                    resource.compress(Bitmap.CompressFormat.JPEG, 100, out)
-//                    out.flush()
-//                    out.close()
-//                }
-//            }
-//        )
     } catch (e: Exception) {
         e.printStackTrace()
     }
@@ -123,21 +63,31 @@ fun saveImg(name: String, imgUrl: String, context: Context):String{
  * 移动文件
  * @param content 上下文
  */
-fun moveJson(content: Context, name: String = "rule", initPath: String){
-    val path = "$initPath/myApp/"
-    if(!File("$path$name.json").exists()) {
+fun moveJson(content: Context, name: String = "rule"){
+    val path = content.getExternalFilesDir(null)?.path
+    if(!File(path,"$name.json").exists()) {
+//        File(path).mkdirs()
+//        File(path, "$name.json").mkdir()
+        ActivityCompat.requestPermissions(
+            content as Activity,
+            arrayOf("android.permission.WRITE_EXTERNAL_STORAGE"), 1)
+
         var inputStream: InputStream? = null
         var outputStream: OutputStream? = null
         try {
             inputStream = content.assets.open("$name.json")
-            InputStreamReader(inputStream)
             val buffer = ByteArray(1024)
-            outputStream = FileOutputStream("$path$name.json")
-            var n: Int
-            while (-1 != inputStream.read(buffer).also { n = it }) {
-                outputStream.write(buffer, 0, n)
+            val file = File(path, "$name.json")
+            if (!file.exists()){
+                file.createNewFile()
             }
-
+            outputStream = FileOutputStream(file)
+            var length: Int
+            while (inputStream.read(buffer).also { length = it } != -1) {
+//                stream.write(buffer, 0, length)
+                outputStream.write(buffer, 0, length)
+            }
+            Log.d("file", file.path)
         } catch (e: IOException) {
             e.printStackTrace()
         } finally {
@@ -148,16 +98,13 @@ fun moveJson(content: Context, name: String = "rule", initPath: String){
 }
 
 
-fun saveJson(string: String, name: String = "rule"){
+fun saveJson(context: Context, string: String, name: String = "rule"){
     var outputStream:OutputStream? = null
     try {
+        val path = context.getExternalFilesDir(null)?.path
         var bytes = string.toByteArray()
-        val b = bytes.size //是字节的长度，不是字符串的长度
-        outputStream = FileOutputStream("/storage/emulated/0/myApp/${name}.json")
-        outputStream.run {
-            write(bytes, 0, b)
-            write(bytes)
-        }
+        outputStream = FileOutputStream(File(path,"${name}.json"))
+        outputStream.write(bytes)
     } catch (e: IOException) {
         e.printStackTrace()
     }finally {
@@ -165,24 +112,29 @@ fun saveJson(string: String, name: String = "rule"){
     }
 }
 
-fun readInitJson(path: String = "/storage/emulated/0/myApp/init.json")
-        :JSONObject{
+fun readInitJson(context: Context):JSONObject{
+
+    val path= context.getExternalFilesDir(null)?.path
+
     val newStringBuilder = StringBuilder()
     var inputStream: InputStream? = null
+    var isr:InputStreamReader? = null
+    var reader:BufferedReader? = null
     try {
-        inputStream = FileInputStream(path)
+        inputStream = FileInputStream(File(path, "init.json"))
 //        inputStream = content.assets.open("init.json")
-        val isr = InputStreamReader(inputStream)
+        isr = InputStreamReader(inputStream)
         val reader = BufferedReader(isr)
         var jsonLine: String?
         while (reader.readLine().also { jsonLine = it } != null) {
             newStringBuilder.append(jsonLine)
         }
-        reader.close()
-        isr.close()
-        inputStream.close()
     }catch (e: IOException) {
         e.printStackTrace()
+    }finally {
+        inputStream?.close()
+        reader?.close()
+        isr?.close()
     }
     val result = newStringBuilder.toString()
     return JSONObject(result)
@@ -190,24 +142,28 @@ fun readInitJson(path: String = "/storage/emulated/0/myApp/init.json")
 }
 
 // 读取规则
-fun readJson(name: String = "rule"):List<Rule>{
-    val path = "/storage/emulated/0/myApp/${name}.json"
+fun readJson(context: Context, name: String = "rule"):List<Rule>{
+//    val path = "/storage/emulated/0/myApp/${name}.json"
+    val path = context.getExternalFilesDir(null)?.path
     val newStringBuilder = StringBuilder()
     var inputStream: InputStream? = null
+    var isr:InputStreamReader? = null
+    var reader:BufferedReader? = null
     try {
-        inputStream = FileInputStream(path)
-//        inputStream = content.assets.open("rule.json")
-        val isr = InputStreamReader(inputStream)
+        inputStream = FileInputStream(File(path, "$name.json"))
+//        inputStream = content.assets.open("init.json")
+        isr = InputStreamReader(inputStream)
         val reader = BufferedReader(isr)
         var jsonLine: String?
         while (reader.readLine().also { jsonLine = it } != null) {
             newStringBuilder.append(jsonLine)
         }
-        reader.close()
-        isr.close()
-        inputStream.close()
-    } catch (e: IOException) {
+    }catch (e: IOException) {
         e.printStackTrace()
+    }finally {
+        inputStream?.close()
+        reader?.close()
+        isr?.close()
     }
 
     val result = newStringBuilder.toString()
@@ -265,5 +221,31 @@ fun shareImg(content: Context, imgPath: String, name: String){
     shareIntent.type = "image/*"
     //切记需要使用Intent.createChooser，否则会出现别样的应用选择框，您可以试试
     shareIntent = Intent.createChooser(shareIntent, "分享图片")
-    content.startActivity(shareIntent)
+     content.startActivity(shareIntent)
+}
+
+/**
+ * 复制到剪贴板
+ * @param context
+ * @param text
+ */
+fun putTextIntoClip(context: Context, text: String?) {
+    val clipboardManager = context.getSystemService(AppCompatActivity.CLIPBOARD_SERVICE) as ClipboardManager
+    //创建ClipData对象
+    val clipData = ClipData.newPlainText("HSFAppDemoClip", text)
+    //添加ClipData对象到剪切板中
+    clipboardManager.setPrimaryClip(clipData)
+}
+
+fun getTextFromClip(context: Context):String {
+    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+//    if (!clipboardManager.hasPrimaryClip()) return
+    val clipData = clipboardManager.primaryClip
+    //获取 ClipDescription
+//    val clipDescription = clipboardManager.primaryClipDescription
+//    //获取 lable
+//    val lable = clipDescription!!.label.toString()
+    //获取 text
+    return clipData!!.getItemAt(0).text.toString()
 }

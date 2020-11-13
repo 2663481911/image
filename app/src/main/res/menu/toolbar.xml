@@ -30,6 +30,11 @@
         android:title="@string/net_add_rule"/>
 
     <item
+        android:id="@+id/copy_rule"
+        app:showAsAction="withText"
+        android:title="@string/copy_rule"/>
+
+    <item
         android:id="@+id/save_pos"
         app:showAsAction="withText"
         android:title="@string/save_pos"/>

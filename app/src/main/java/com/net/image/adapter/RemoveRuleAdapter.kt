@@ -16,7 +16,6 @@ import com.google.gson.Gson
 
 class RemoveRuleAdapter(val context: Context, private val nameList: MutableList<String>) :
     RecyclerView.Adapter<RemoveRuleAdapter.ViewHolder>(){
-    private var rule: Rule? = null
 
 
     inner class ViewHolder(view: View): RecyclerView.ViewHolder(view){
@@ -49,9 +48,9 @@ class RemoveRuleAdapter(val context: Context, private val nameList: MutableList<
                     //删除动画
                     notifyItemRemoved(position);
                     notifyDataSetChanged();
-                    val readJson = readJson().toMutableList()
+                    val readJson = readJson(context).toMutableList()
                     readJson.removeAt(position)
-                    saveJson(Gson().toJson(readJson).toString())
+                    saveJson(context, Gson().toJson(readJson).toString())
                 }
                 setNegativeButton("No"){ _, _ ->
 

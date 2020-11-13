@@ -7,10 +7,18 @@
     android:background="#191819"
     tools:context=".activity.ShowBigImgActivity">
 
+
+
     <androidx.viewpager.widget.ViewPager
         android:id="@+id/show_big_viewPager"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/big_toolbar"
+        android:layout_width="match_parent"
+        android:background="@color/colorAccent"
+        android:layout_height="35dp"/>
 
     <LinearLayout
         android:id="@+id/view_indicator"
@@ -20,44 +28,54 @@
         android:layout_marginBottom="30dp"
         android:layout_centerInParent="true"
         android:orientation="horizontal" >
-
     </LinearLayout>
 
 
-    <RelativeLayout
-        android:id="@+id/bottom_linear"
-        android:layout_width="match_parent"
+<!--    <RelativeLayout-->
+<!--        android:id="@+id/bottom_linear"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_height="wrap_content">-->
+
+
+
+<!--        <ImageView-->
+<!--            android:id="@+id/down"-->
+<!--            android:layout_width="50dp"-->
+<!--            android:layout_height="30dp"-->
+<!--            android:src="@drawable/down"-->
+<!--            android:layout_toLeftOf="@id/send_img"-->
+<!--            />-->
+
+<!--        <ImageView-->
+<!--            android:id="@+id/setting_back"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="30dp"-->
+<!--            android:foregroundGravity="center"-->
+<!--            android:layout_toLeftOf="@id/down"-->
+<!--            android:src="@drawable/wallpaper"-->
+<!--            />-->
+
+<!--        <ImageView-->
+<!--            android:id="@+id/send_img"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="30dp"-->
+<!--            android:foregroundGravity="center"-->
+<!--            android:src="@drawable/send"-->
+<!--            android:layout_alignParentEnd="true"-->
+<!--            />-->
+
+<!--    </RelativeLayout>-->
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/big_menu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
-        android:layout_height="wrap_content">
-
-
-
-        <ImageView
-            android:id="@+id/down"
-            android:layout_width="50dp"
-            android:layout_height="30dp"
-            android:src="@drawable/down"
-            android:layout_toLeftOf="@id/send_img"
-            />
-
-        <ImageView
-            android:id="@+id/setting_back"
-            android:layout_width="80dp"
-            android:layout_height="30dp"
-            android:foregroundGravity="center"
-            android:layout_toLeftOf="@id/down"
-            android:src="@drawable/wallpaper"
-            />
-
-        <ImageView
-            android:id="@+id/send_img"
-            android:layout_width="80dp"
-            android:layout_height="30dp"
-            android:foregroundGravity="center"
-            android:src="@drawable/send"
-            android:layout_alignParentRight="true"
-            />
-
-    </RelativeLayout>
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="40dp"
+        android:layout_marginBottom="50dp"
+        android:src="@drawable/big_menu"/>
 
 </RelativeLayout>
